@@ -1,0 +1,195 @@
+<?php
+//FORAI:F2726;DEF[C2323:ItemTest,F11698:setUp,F11699:testFromArray,F11700:testEmpty,F11701:testEmptyAttribute1,F11702:testEmptyAttribute2,F11703:testEmptyType,F11704:testNonExistingParam,F11705:testGetRaw1,F11706:testGetRaw2,F11707:testGetItemList1,F11708:testGetItemList2];IMP[F1322:C1080,F1339:C1095];EXP[C2323,F11698,F11699,F11700,F11701,F11702,F11703,F11704,F11705,F11706,F11707,F11708];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace tests\unit\Espo\Core\Select\Where;
+
+use Espo\Core\Select\Where\Item;
+use Espo\Core\Select\Where\Item\Data\DateTime;
+
+use InvalidArgumentException;
+
+class ItemTest extends \PHPUnit\Framework\TestCase
+{
+    protected function setUp(): void
+    {
+    }
+
+    public function testFromArray()
+    {
+        $item = Item::createBuilder()
+            ->setType('equals')
+            ->setAttribute('test')
+            ->setValue('testValue')
+            ->build();
+
+        $this->assertEquals('equals', $item->getType());
+        $this->assertEquals('test', $item->getAttribute());
+        $this->assertEquals('testValue', $item->getValue());
+        $this->assertNull($item->getData());
+
+        $item1 = Item::createBuilder()
+            ->setType('equals')
+            ->setAttribute('test')
+            ->setValue(1)
+            ->build();
+
+        $this->assertEquals('equals', $item1->getType());
+        $this->assertEquals('test', $item1->getAttribute());
+        $this->assertEquals(1, $item1->getValue());
+
+        $item2 = Item::createBuilder()
+            ->setType('equals')
+            ->setAttribute('test')
+            ->setValue('testValue')
+            ->setData(
+                DateTime::create()->withTimeZone('Europe/London')
+            )
+            ->build();
+
+        $this->assertNotNull($item2->getData());
+        $this->assertEquals('Europe/London', $item2->getData()->getTimeZone());
+    }
+
+    public function testEmpty()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $item = Item::fromRaw([]);
+    }
+
+    public function testEmptyAttribute1()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $item = Item::fromRaw([
+            'type' => 'equals',
+        ]);
+    }
+
+    public function testEmptyAttribute2()
+    {
+        $item = Item::fromRaw([
+            'type' => 'and',
+            'value' => [],
+        ]);
+
+        $this->assertNotNull($item);
+    }
+
+    public function testEmptyType()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $item = Item::fromRaw([
+            'attribute' => 'test',
+        ]);
+    }
+
+    public function testNonExistingParam()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = Item::fromRaw([
+            'bad' => 'd',
+        ]);
+    }
+
+    public function testGetRaw1()
+    {
+        $raw = [
+            'type' => 'and',
+            'value' => [],
+        ];
+
+        $item = Item::fromRaw($raw);
+
+        $result = $item->getRaw();
+
+        $this->assertEquals($raw, $result);
+    }
+
+    public function testGetRaw2()
+    {
+        $raw = [
+            'type' => 'euqls',
+            'attribute' => 'test',
+            'value' => '2020-12-12',
+            'dateTime' => true,
+            'timeZone' => 'UTC',
+        ];
+
+        $item = Item::fromRaw($raw);
+
+        $result = $item->getRaw();
+
+        $this->assertEquals($raw, $result);
+    }
+
+    public function testGetItemList1()
+    {
+        $raw = [
+            'type' => 'and',
+            'value' => [
+                [
+                    'type' => 'or',
+                    'value' => [],
+                ],
+                [
+                    'type' => 'or',
+                    'value' => [],
+                ],
+            ],
+        ];
+
+        $item = Item::fromRaw($raw);
+
+        $this->assertEquals('or', $item->getItemList()[0]->getType());
+    }
+
+    public function testGetItemList2()
+    {
+        $item = Item::createBuilder()
+            ->setType('and')
+            ->setItemList([
+                Item::createBuilder()
+                    ->setType('or')
+                    ->setItemList([])
+                    ->build(),
+                Item::createBuilder()
+                    ->setType('or')
+                    ->setItemList([])
+                    ->build(),
+            ])
+            ->build();
+
+        $this->assertEquals('or', $item->getItemList()[0]->getType());
+    }
+}

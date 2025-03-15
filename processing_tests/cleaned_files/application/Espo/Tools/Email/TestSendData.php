@@ -1,0 +1,73 @@
+<?php
+//FORAI:F471;DEF[C293:TestSendData,F2160:__construct,F2161:getEmailAddress,F2162:getType,F2163:getId,F2164:getUserId];IMP[];EXP[C293,F2161,F2162,F2163,F2164];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Tools\Email;
+
+class TestSendData
+{
+    private string $emailAddress;
+    private ?string $type;
+    private ?string $id;
+    private ?string $userId;
+
+    public function __construct(
+        string $emailAddress,
+        ?string $type,
+        ?string $id,
+        ?string $userId
+    ) {
+        $this->emailAddress = $emailAddress;
+        $this->type = $type;
+        $this->id = $id;
+        $this->userId = $userId;
+    }
+
+    public function getEmailAddress(): string
+    {
+        return $this->emailAddress;
+    }
+
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+
+    public function getId(): ?string
+    {
+        return $this->id;
+    }
+
+    public function getUserId(): ?string
+    {
+        return $this->userId;
+    }
+}

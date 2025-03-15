@@ -1,0 +1,74 @@
+<?php
+//FORAI:F2247;DEF[C1858:UrlType,F9459:__construct,F9460:checkRequired,F9461:checkMaxLength,F9462:checkValid];IMP[F1665:C1390];EXP[C1858,F9460,F9461,F9462];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Classes\FieldValidators;
+
+use Espo\Core\Utils\Metadata;
+use Espo\ORM\Entity;
+
+class UrlType
+{
+    private Metadata $metadata;
+
+    private VarcharType $varcharType;
+
+    public function __construct(Metadata $metadata, VarcharType $varcharType)
+    {
+        $this->metadata = $metadata;
+        $this->varcharType = $varcharType;
+    }
+
+    public function checkRequired(Entity $entity, string $field): bool
+    {
+        return $this->varcharType->checkRequired($entity, $field);
+    }
+
+    public function checkMaxLength(Entity $entity, string $field, ?int $validationValue): bool
+    {
+        return $this->varcharType->checkMaxLength($entity, $field, $validationValue);
+    }
+
+    public function checkValid(Entity $entity, string $field): bool
+    {
+        $value = $entity->get($field);
+
+        if ($value === null) {
+            return true;
+        }
+
+        /** @var string $pattern */
+        $pattern = $this->metadata->get(['app', 'regExpPatterns', 'uriOptionalProtocol', 'pattern']);
+
+        $preparedPattern = '/^' . $pattern . '$/';
+
+        return (bool) preg_match($preparedPattern, $value);
+    }
+}

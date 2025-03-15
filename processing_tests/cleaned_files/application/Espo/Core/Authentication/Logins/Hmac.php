@@ -1,0 +1,86 @@
+<?php
+//FORAI:F1012;DEF[C780:Hmac,F4624:__construct,F4625:login];IMP[F952:C725,F1009:C777,F942:C717,F962:C735,F1654:C1376];EXP[C780,F4625];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Core\Authentication\Logins;
+
+use Espo\Core\Api\Request;
+use Espo\Core\Authentication\Helper\UserFinder;
+use Espo\Core\Authentication\Login;
+use Espo\Core\Authentication\Login\Data;
+use Espo\Core\Authentication\Result;
+use Espo\Core\Authentication\Result\FailReason;
+use Espo\Core\Utils\ApiKey;
+
+use RuntimeException;
+
+class Hmac implements Login
+{
+    public const NAME = 'Hmac';
+
+    public function __construct(private UserFinder $userFinder, private ApiKey $apiKeyUtil)
+    {}
+
+    public function login(Data $data, Request $request): Result
+    {
+        $authString = base64_decode($request->getHeader('X-Hmac-Authorization') ?? '');
+
+        list($apiKey, $hash) = explode(':', $authString, 2);
+
+        if (!$apiKey) {
+            return Result::fail(FailReason::WRONG_CREDENTIALS);
+        }
+
+        $user = $this->userFinder->findApiHmac($apiKey);
+
+        if (!$user) {
+            return Result::fail(FailReason::WRONG_CREDENTIALS);
+        }
+
+        $secretKey = $this->apiKeyUtil->getSecretKeyForUserId($user->getId());
+
+        if (!$secretKey) {
+            throw new RuntimeException("No secret key for API user '" . $user->getId() . "'.");
+        }
+
+        $string = $request->getMethod() . ' ' . $request->getResourcePath();
+
+        // As of v8.4.1.
+        if ($hash === ApiKey::hash($secretKey, $string)) {
+            return Result::success($user);
+        }
+
+        if ($hash === ApiKey::hashLegacy($secretKey, $string)) {
+            return Result::success($user);
+        }
+
+        return Result::fail(FailReason::HASH_NOT_MATCHED);
+    }
+}

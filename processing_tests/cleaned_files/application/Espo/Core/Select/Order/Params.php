@@ -1,0 +1,125 @@
+<?php
+//FORAI:F1394;DEF[C1144:Params,F5914:__construct,F5915:fromAssoc,F5916:forbidComplexExpressions,F5917:forceDefault,F5918:getOrderBy,F5919:getOrder];IMP[];EXP[C1144,F5915,F5916,F5917,F5918,F5919];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Core\Select\Order;
+
+use Espo\Core\Select\SearchParams;
+
+use InvalidArgumentException;
+
+/**
+ * Order parameters.
+ *
+ * @immutable
+ */
+class Params
+{
+    //private bool $forbidComplexExpressions = false;
+    private bool $forceDefault = false;
+    /** @var mixed */
+    private $orderBy = null;
+    /** @var SearchParams::ORDER_ASC|SearchParams::ORDER_DESC|null */
+    private $order = null;
+
+    private function __construct() {}
+
+    /**
+     * @param array{
+     *     forceDefault?: bool,
+     *     orderBy?: ?string,
+     *     order?: SearchParams::ORDER_ASC|SearchParams::ORDER_DESC|null,
+     * } $params
+     */
+    public static function fromAssoc(array $params): self
+    {
+        $object = new self();
+
+        //$object->forbidComplexExpressions = $params['forbidComplexExpressions'] ?? false;
+        $object->forceDefault = $params['forceDefault'] ?? false;
+        $object->orderBy = $params['orderBy'] ?? null;
+        $object->order = $params['order'] ?? null;
+
+        foreach ($params as $key => $value) {
+            if (!property_exists($object, $key)) {
+                throw new InvalidArgumentException("Unknown parameter '{$key}'.");
+            }
+        }
+
+        if ($object->orderBy && !is_string($object->orderBy)) {
+            throw new InvalidArgumentException("Bad orderBy.");
+        }
+
+        /** @var ?string $order */
+        $order = $object->order;
+
+        if (
+            $order &&
+            $order !== SearchParams::ORDER_ASC &&
+            $order !== SearchParams::ORDER_DESC
+        ) {
+            throw new InvalidArgumentException("Bad order.");
+        }
+
+        return $object;
+    }
+
+    /*public function forbidComplexExpressions(): bool
+    {
+        return $this->forbidComplexExpressions;
+    }*/
+
+    /**
+     * Force default order.
+     */
+    public function forceDefault(): bool
+    {
+        return $this->forceDefault;
+    }
+
+    /**
+     * An order-By field.
+     */
+    public function getOrderBy(): ?string
+    {
+        /** @var ?string */
+        return $this->orderBy;
+    }
+
+    /**
+     * An order direction.
+     *
+     * @return SearchParams::ORDER_ASC|SearchParams::ORDER_DESC|null
+     */
+    public function getOrder(): ?string
+    {
+        return $this->order;
+    }
+}

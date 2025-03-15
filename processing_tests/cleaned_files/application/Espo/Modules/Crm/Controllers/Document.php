@@ -1,0 +1,87 @@
+<?php
+//FORAI:F2371;DEF[C1983:Document<Record>,F9796:postActionGetAttachmentList,F9797:getDocumentService];IMP[F1018:C787,F927:C708,F931:C709,F926:C705,F925:C706,F2452:C2061,F651:C465];EXP[C1983,F9796,F9797];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Modules\Crm\Controllers;
+
+use Espo\Core\Controllers\Record;
+use Espo\Core\Exceptions\BadRequest;
+use Espo\Core\Api\Request;
+
+use Espo\Core\Exceptions\Error;
+use Espo\Core\Exceptions\Forbidden;
+use Espo\Core\Exceptions\NotFound;
+use Espo\Modules\Crm\Tools\Document\Service;
+use Espo\Tools\Attachment\FieldData;
+use stdClass;
+
+class Document extends Record
+{
+
+    /**
+     * @return stdClass[]
+     * @throws BadRequest
+     * @throws Forbidden
+     * @throws Error
+     * @throws NotFound
+     */
+    public function postActionGetAttachmentList(Request $request): array
+    {
+        $data = $request->getParsedBody();
+
+        $id = $data->id ?? null;
+        $field = $data->field ?? null;
+        $parentType = $data->parentType ?? null;
+        $relatedType = $data->relatedType ?? null;
+
+        if (!$id || !$field) {
+            throw new BadRequest("No `id` or `field`.");
+        }
+
+        try {
+            $fieldData = new FieldData(
+                $field,
+                $parentType,
+                $relatedType
+            );
+        } catch (Error $e) {
+            throw new BadRequest($e->getMessage());
+        }
+
+        $attachment = $this->getDocumentService()->copyAttachment($id, $fieldData);
+
+        return [$attachment->getValueMap()];
+    }
+
+    private function getDocumentService(): Service
+    {
+        return $this->injectableFactory->create(Service::class);
+    }
+}

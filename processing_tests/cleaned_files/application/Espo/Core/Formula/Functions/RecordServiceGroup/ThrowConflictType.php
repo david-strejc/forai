@@ -1,0 +1,65 @@
+<?php
+//FORAI:F1296;DEF[C1054:ThrowConflictType<BaseFunction>,F5411:process];IMP[F918:C699,F919:C702,F932:C711,F1122:C881,F1139:C897,F1132:C890,F1155:C913,F1643:C1365];EXP[C1054,F5411];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Core\Formula\Functions\RecordServiceGroup;
+
+use Espo\Core\Exceptions\Conflict;
+use Espo\Core\Exceptions\ConflictSilent;
+use Espo\Core\Exceptions\Error\Body;
+use Espo\Core\Formula\ArgumentList;
+use Espo\Core\Formula\Exceptions\Error;
+use Espo\Core\Formula\Exceptions\ExecutionException;
+use Espo\Core\Formula\Functions\BaseFunction;
+use Espo\Core\Utils\Json;
+
+class ThrowConflictType extends BaseFunction
+{
+    /**
+     * @throws Error
+     * @throws ExecutionException
+     * @throws Conflict
+     */
+    public function process(ArgumentList $args)
+    {
+        if (empty($this->getVariables()->__isRecordService)) {
+            $this->throwError("Can be called only from API script.");
+        }
+
+        $message = isset($args[0]) ? $this->evaluate($args[0]) : '';
+        $body = isset($args[1]) ? $this->evaluate($args[1]) : null;
+
+        if ($body !== null) {
+            throw ConflictSilent::createWithBody($message, Json::encode($body));
+        }
+
+        throw ConflictSilent::createWithBody($message, Body::create()->withMessage($message));
+    }
+}

@@ -1,0 +1,9 @@
+dependency_tracker
+header_generator
+root_cli
+root_query
+runtime_introspector
+static_analyzer
+symbol_registry
+tests
+utils

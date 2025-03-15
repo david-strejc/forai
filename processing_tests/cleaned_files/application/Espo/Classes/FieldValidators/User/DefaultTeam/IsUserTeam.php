@@ -1,0 +1,57 @@
+<?php
+//FORAI:F2279;DEF[C1890:IsUserTeam,F9558:validate];IMP[F1538:C1268,F1539:C1270];EXP[C1890,F9558];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Classes\FieldValidators\User\DefaultTeam;
+
+use Espo\Core\FieldValidation\Validator;
+use Espo\Core\FieldValidation\Validator\Data;
+use Espo\Core\FieldValidation\Validator\Failure;
+use Espo\Entities\User;
+use Espo\ORM\Entity;
+
+/**
+ * @implements Validator<User>
+ */
+class IsUserTeam implements Validator
+{
+    public function validate(Entity $entity, string $field, Data $data): ?Failure
+    {
+        if (!$entity->getDefaultTeam()) {
+            return null;
+        }
+
+        if (in_array($entity->getDefaultTeam()->getId(), $entity->getTeamIdList())) {
+            return null;
+        }
+
+        return Failure::create();
+    }
+}

@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: forai
+Version: 0.1.0
+Summary: FORAI (File Object Reference for AI Interpretation) header system
+Author: FORAI Team
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Requires-Python: >=3.8

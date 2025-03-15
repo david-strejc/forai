@@ -1,0 +1,54 @@
+<?php
+//FORAI:F733;DEF[C542:Data,F3401:__construct,F3402:getDir,F3403:getDestDir];IMP[];EXP[C542,F3402,F3403];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Tools\ExportCustom;
+
+class Data
+{
+    /**
+     * @param string[] $customEntityTypeList
+     */
+    public function __construct(
+        public string $folder,
+        public array $customEntityTypeList,
+        private string $module
+    ) {}
+
+    public function getDir(): string
+    {
+        return 'data/tmp/' . $this->folder;
+    }
+
+    public function getDestDir(): string
+    {
+        return $this->getDir() . '/files/custom/Espo/Modules/' . $this->module;
+    }
+}

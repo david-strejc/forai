@@ -1,0 +1,90 @@
+<?php
+//FORAI:F740;DEF[C548:DefaultHelper,F3438:__construct,F3439:isCredentialsAllowed,F3440:getAllowedOrigin,F3441:getAllowedMethods,F3442:getAllowedHeaders,F3443:getSuccessStatus,F3444:getMaxAge,F3445:getAllowedOrigins];IMP[F1662:C1385];EXP[C548,F3439,F3440,F3441,F3442,F3443,F3444,F3445];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Tools\Api\Cors;
+
+use Espo\Core\Utils\Config;
+use Psr\Http\Message\RequestInterface as Request;
+
+class DefaultHelper implements Helper
+{
+    public function __construct(private Config $config) {}
+
+    public function isCredentialsAllowed(Request $request): bool
+    {
+        return true;
+    }
+
+    public function getAllowedOrigin(Request $request): ?string
+    {
+        $origin = $request->getHeaderLine('Origin');
+
+        if (!$origin) {
+            return null;
+        }
+
+        return in_array($origin, $this->getAllowedOrigins()) ?
+            $origin :
+            null;
+    }
+
+    public function getAllowedMethods(Request $request): array
+    {
+        return $this->config->get('apiCorsAllowedMethodList') ?? [];
+    }
+
+    public function getAllowedHeaders(Request $request): array
+    {
+        if (!$request->hasHeader('Access-Control-Request-Headers')) {
+            return [];
+        }
+
+        return $this->config->get('apiCorsAllowedHeaderList') ?? [];
+    }
+
+    public function getSuccessStatus(): ?int
+    {
+        return null;
+    }
+
+    public function getMaxAge(): ?int
+    {
+        return $this->config->get('apiCorsMaxAge');
+    }
+
+    /**
+     * @return string[]
+     */
+    private function getAllowedOrigins(): array
+    {
+        return $this->config->get('apiCorsAllowedOriginList') ?? [];
+    }
+}

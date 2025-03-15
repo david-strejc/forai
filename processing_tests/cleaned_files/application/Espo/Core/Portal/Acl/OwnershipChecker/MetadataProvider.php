@@ -1,0 +1,66 @@
+<?php
+//FORAI:F1050;DEF[C816:MetadataProvider,F4833:__construct,F4834:getAccountLink,F4835:getContactLink];IMP[F1665:C1390,F323:C181];EXP[C816,F4834,F4835];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Core\Portal\Acl\OwnershipChecker;
+
+use Espo\Core\Utils\Metadata;
+use Espo\ORM\Defs;
+use Espo\ORM\Defs\RelationDefs;
+
+class MetadataProvider
+{
+    public function __construct(
+        private Metadata $metadata,
+        private Defs $defs,
+    ) {}
+
+    public function getAccountLink(string $entityType): ?RelationDefs
+    {
+        $link = $this->metadata->get("aclDefs.$entityType.accountLink");
+
+        if (!$link) {
+            return null;
+        }
+
+        return $this->defs->getEntity($entityType)->tryGetRelation($link);
+    }
+
+    public function getContactLink(string $entityType): ?RelationDefs
+    {
+        $link = $this->metadata->get("aclDefs.$entityType.contactLink");
+
+        if (!$link) {
+            return null;
+        }
+
+        return $this->defs->getEntity($entityType)->tryGetRelation($link);
+    }
+}

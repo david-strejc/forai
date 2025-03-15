@@ -1,0 +1,75 @@
+<?php
+//FORAI:F1450;DEF[C1195:BeforeFetchResult,F6240:create,F6241:withToSkip,F6242:with,F6243:toSkip,F6244:get,F6245:has];IMP[];EXP[C1195,F6240,F6241,F6242,F6243,F6244,F6245];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Core\Mail\Account\Hook;
+
+class BeforeFetchResult
+{
+    private bool $toSkip = false;
+    /** @var array<string, mixed> */
+    private array $data = [];
+
+    public static function create(): self
+    {
+        return new self();
+    }
+
+    public function withToSkip(bool $toSkip = true): self
+    {
+        $obj = clone $this;
+        $obj->toSkip = $toSkip;
+
+        return $obj;
+    }
+
+    public function with(string $name, mixed $value): self
+    {
+        $obj = clone $this;
+        $obj->data[$name] = $value;
+
+        return $obj;
+    }
+
+    public function toSkip(): bool
+    {
+        return $this->toSkip;
+    }
+
+    public function get(string $name): mixed
+    {
+        return $this->data[$name] ?? null;
+    }
+
+    public function has(string $name): bool
+    {
+        return array_key_exists($name, $this->data);
+    }
+}

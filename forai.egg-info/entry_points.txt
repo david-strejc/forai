@@ -1,0 +1,3 @@
+[console_scripts]
+forai = root_cli:main
+forai-query = root_query:main

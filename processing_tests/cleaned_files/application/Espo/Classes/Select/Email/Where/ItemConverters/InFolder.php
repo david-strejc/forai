@@ -1,0 +1,250 @@
+<?php
+//FORAI:F2140;DEF[C1753:InFolder,F9274:__construct,F9275:convert,F9276:convertInbox,F9277:convertSent,F9278:convertImportant,F9279:convertTrash,F9280:convertArchive,F9281:convertDraft,F9282:convertFolderId,F9283:joinEmailUser,F9284:getEmailAddressIdList];IMP[F1322:C1080,F369:C213,F379:C221,F2152:C1765,F474:C295];EXP[C1753,F9275,F9276,F9277,F9278,F9279,F9280,F9281,F9282,F9283,F9284];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Classes\Select\Email\Where\ItemConverters;
+
+use Espo\Core\Select\Where\ItemConverter;
+use Espo\Core\Select\Where\Item;
+
+use Espo\Entities\Email;
+use Espo\ORM\Name\Attribute;
+use Espo\ORM\Query\SelectBuilder as QueryBuilder;
+use Espo\ORM\Query\Part\WhereItem as WhereClauseItem;
+use Espo\ORM\Query\Part\WhereClause;
+use Espo\ORM\EntityManager;
+use Espo\Entities\User;
+use Espo\Classes\Select\Email\Helpers\JoinHelper;
+use Espo\Tools\Email\Folder;
+
+/**
+ * @noinspection PhpUnused
+ */
+class InFolder implements ItemConverter
+{
+    public function __construct(
+        private User $user,
+        private EntityManager $entityManager,
+        private JoinHelper $joinHelper
+    ) {}
+
+    public function convert(QueryBuilder $queryBuilder, Item $item): WhereClauseItem
+    {
+        $folderId = $item->getValue();
+
+        return match ($folderId) {
+            Folder::ALL => WhereClause::fromRaw([]),
+            Folder::INBOX => $this->convertInbox($queryBuilder),
+            Folder::IMPORTANT => $this->convertImportant($queryBuilder),
+            Folder::SENT => $this->convertSent($queryBuilder),
+            Folder::TRASH => $this->convertTrash($queryBuilder),
+            Folder::ARCHIVE => $this->convertArchive($queryBuilder),
+            Folder::DRAFTS => $this->convertDraft(),
+            default => $this->convertFolderId($queryBuilder, $folderId),
+        };
+    }
+
+    private function convertInbox(QueryBuilder $queryBuilder): WhereClauseItem
+    {
+        $this->joinEmailUser($queryBuilder);
+
+        $whereClause = [
+            Email::ALIAS_INBOX . '.inTrash' => false,
+            Email::ALIAS_INBOX . '.inArchive' => false,
+            Email::ALIAS_INBOX . '.folderId' => null,
+            Email::ALIAS_INBOX . '.userId' => $this->user->getId(),
+            [
+                'status' => [
+                    Email::STATUS_ARCHIVED,
+                    Email::STATUS_SENT,
+                ],
+                'groupFolderId' => null,
+            ],
+        ];
+
+        $emailAddressIdList = $this->getEmailAddressIdList();
+
+        if ($emailAddressIdList !== []) {
+            $whereClause['fromEmailAddressId!='] = $emailAddressIdList;
+
+            $whereClause[] = [
+                'OR' => [
+                    'status' => Email::STATUS_ARCHIVED,
+                    'createdById!=' => $this->user->getId(),
+                ],
+            ];
+        } else {
+            $whereClause[] = [
+                'status' => Email::STATUS_ARCHIVED,
+                'createdById!=' => $this->user->getId(),
+            ];
+        }
+
+        return WhereClause::fromRaw($whereClause);
+    }
+
+    private function convertSent(QueryBuilder $queryBuilder): WhereClauseItem
+    {
+        $this->joinEmailUser($queryBuilder);
+
+        return WhereClause::fromRaw([
+            'OR' => [
+                'fromEmailAddressId' => $this->getEmailAddressIdList(),
+                [
+                    'status' => Email::STATUS_SENT,
+                    'createdById' => $this->user->getId(),
+                ]
+            ],
+            [
+                'status!=' => Email::STATUS_DRAFT,
+            ],
+            Email::ALIAS_INBOX . '.inTrash' => false,
+            [
+                'OR' => [
+                    'groupFolderId' => null,
+                    'groupFolderId!=' => Email::GROUP_STATUS_FOLDER_TRASH,
+                ]
+            ]
+        ]);
+    }
+
+    private function convertImportant(QueryBuilder $queryBuilder): WhereClauseItem
+    {
+        $this->joinEmailUser($queryBuilder);
+
+        return WhereClause::fromRaw([
+            Email::ALIAS_INBOX . '.userId' => $this->user->getId(),
+            Email::ALIAS_INBOX . '.isImportant' => true,
+        ]);
+    }
+
+    private function convertTrash(QueryBuilder $queryBuilder): WhereClauseItem
+    {
+        $this->joinEmailUser($queryBuilder);
+
+        return WhereClause::fromRaw([
+            'OR' => [
+                [
+                    Email::ALIAS_INBOX . '.userId' => $this->user->getId(),
+                    Email::ALIAS_INBOX . '.inTrash' => true,
+                ],
+                [
+                    'groupFolderId!=' => null,
+                    'groupStatusFolder' => Email::GROUP_STATUS_FOLDER_TRASH,
+                ],
+            ]
+        ]);
+    }
+
+    private function convertArchive(QueryBuilder $queryBuilder): WhereClauseItem
+    {
+        $this->joinEmailUser($queryBuilder);
+
+        return WhereClause::fromRaw([
+            'OR' => [
+                [
+                    Email::ALIAS_INBOX . '.userId' => $this->user->getId(),
+                    Email::ALIAS_INBOX . '.inArchive' => true,
+                ],
+                [
+                    'groupFolderId!=' => null,
+                    'groupStatusFolder' => Email::GROUP_STATUS_FOLDER_ARCHIVE,
+                ],
+            ]
+        ]);
+    }
+
+    private function convertDraft(): WhereClauseItem
+    {
+        return WhereClause::fromRaw([
+            'status' => Email::STATUS_DRAFT,
+            'createdById' => $this->user->getId(),
+        ]);
+    }
+
+    private function convertFolderId(QueryBuilder $queryBuilder, string $folderId): WhereClauseItem
+    {
+        $this->joinEmailUser($queryBuilder);
+
+        if (str_starts_with($folderId, 'group:')) {
+            $groupFolderId = substr($folderId, 6);
+
+            if ($groupFolderId === '') {
+                $groupFolderId = null;
+            }
+
+            return WhereClause::fromRaw([
+                'groupFolderId' => $groupFolderId,
+                'groupStatusFolder' => null,
+                'fromEmailAddressId!=' => $this->getEmailAddressIdList(),
+                'status' => [
+                    Email::STATUS_ARCHIVED,
+                    Email::STATUS_SENT,
+                ],
+            ]);
+        }
+
+        return WhereClause::fromRaw([
+            Email::ALIAS_INBOX . '.inTrash' => false,
+            Email::ALIAS_INBOX . '.inArchive' => false,
+            Email::ALIAS_INBOX . '.folderId' => $folderId,
+            'groupFolderId' => null,
+            'status' => [
+                Email::STATUS_ARCHIVED,
+                Email::STATUS_SENT,
+            ],
+        ]);
+    }
+
+    protected function joinEmailUser(QueryBuilder $queryBuilder): void
+    {
+        $this->joinHelper->joinEmailUser($queryBuilder, $this->user->getId());
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function getEmailAddressIdList(): array
+    {
+        $emailAddressList = $this->entityManager
+            ->getRDBRepository(User::ENTITY_TYPE)
+            ->getRelation($this->user, 'emailAddresses')
+            ->select([Attribute::ID])
+            ->find();
+
+        $emailAddressIdList = [];
+
+        foreach ($emailAddressList as $emailAddress) {
+            $emailAddressIdList[] = $emailAddress->getId();
+        }
+
+        return $emailAddressIdList;
+    }
+}

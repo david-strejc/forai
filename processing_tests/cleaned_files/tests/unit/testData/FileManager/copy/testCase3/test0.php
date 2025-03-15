@@ -1,0 +1,1 @@
+//FORAI:F2652;DEF[];IMP[];EXP[];LANG[php]//

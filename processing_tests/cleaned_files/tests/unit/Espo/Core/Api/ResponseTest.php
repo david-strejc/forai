@@ -1,0 +1,63 @@
+<?php
+//FORAI:F2828;DEF[C2425:ResponseTest,F12392:testHeaderAsArray,F12393:testGetHeaderNames];IMP[F2013:C1638];EXP[C2425,F12392,F12393];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace tests\unit\Espo\Core\Api;
+
+use Slim\Psr7\Factory\ResponseFactory;
+use Espo\Core\Api\ResponseWrapper;
+
+class ResponseTest extends \PHPUnit\Framework\TestCase
+{
+    public function testHeaderAsArray(): void
+    {
+        $response = (new ResponseFactory())
+            ->createResponse()
+            ->withAddedHeader('Test', '1')
+            ->withAddedHeader('Test', '2');
+
+        $wrapped = new ResponseWrapper($response);
+
+        $this->assertEquals(['1', '2'], $wrapped->getHeaderAsArray('Test'));
+    }
+
+    public function testGetHeaderNames(): void
+    {
+        $response = (new ResponseFactory())
+            ->createResponse()
+            ->withAddedHeader('Test', '1')
+            ->withAddedHeader('Test', '2')
+            ->withAddedHeader('Content-Type', 'application/json');
+
+        $wrapped = new ResponseWrapper($response);
+
+        $this->assertEquals(['Test', 'Content-Type'], $wrapped->getHeaderNames());
+    }
+}

@@ -1,0 +1,59 @@
+<?php
+//FORAI:F598;DEF[C414:AclDependencyItem,F2799:__construct,F2800:getTarget,F2801:getScope,F2802:getField];IMP[];EXP[C414,F2800,F2801,F2802];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Tools\App\Metadata;
+
+class AclDependencyItem
+{
+    public function __construct(
+        private string $target,
+        private string $scope,
+        private ?string $field
+    ) {}
+
+    /**
+     * A metadata path to be allowed if a user has access to a specific scope/field.
+     */
+    public function getTarget(): string
+    {
+        return $this->target;
+    }
+
+    public function getScope(): string
+    {
+        return $this->scope;
+    }
+
+    public function getField(): ?string
+    {
+        return $this->field;
+    }
+}

@@ -1,0 +1,84 @@
+<?php
+//FORAI:F2718;DEF[C2315:ArgumentListTest,F11569:setUp,F11570:tearDown,F11571:testCount,F11572:testAccess,F11573:testIteration];IMP[F1122:C881];EXP[C2315,F11569,F11570,F11571,F11572,F11573];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace tests\unit\Espo\Core\Formula;
+
+use Espo\Core\Formula\ArgumentList;
+
+class ArgumentListTest extends \PHPUnit\Framework\TestCase
+{
+    protected function setUp() : void
+    {
+    }
+
+    protected function tearDown() : void
+    {
+    }
+
+    public function testCount()
+    {
+        $list = new ArgumentList([]);
+        $this->assertEquals(0, count($list));
+
+        $list = new ArgumentList([
+            null,
+            '1',
+            (object) [],
+        ]);
+        $this->assertEquals(3, count($list));
+    }
+
+    public function testAccess()
+    {
+        $list = new ArgumentList([
+            null,
+            '1',
+            (object) [],
+        ]);
+        $this->assertEquals(null, $list[0]->getData());
+        $this->assertEquals('1', $list[1]->getData());
+    }
+
+    public function testIteration()
+    {
+        $list = new ArgumentList([
+            null,
+            '1',
+        ]);
+
+        $array = [];
+        foreach ($list as $item) {
+            $array[] = $item->getData();
+        }
+        $this->assertEquals(null, $array[0]);
+        $this->assertEquals('1', $array[1]);
+    }
+}

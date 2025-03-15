@@ -1,0 +1,89 @@
+<?php
+//FORAI:F1237;DEF[C995:UnrelateType<BaseFunction>,F5358:process];IMP[F1122:C881,F1155:C913];EXP[C995,F5358];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Core\Formula\Functions\RecordGroup;
+
+use Espo\Core\Formula\ArgumentList;
+use Espo\Core\Formula\Functions\BaseFunction;
+
+use Espo\Core\Di;
+
+class UnrelateType extends BaseFunction implements
+    Di\EntityManagerAware
+{
+    use Di\EntityManagerSetter;
+
+    public function process(ArgumentList $args)
+    {
+        if (count($args) < 4) {
+            $this->throwTooFewArguments(4);
+        }
+
+        $entityType = $this->evaluate($args[0]);
+        $id = $this->evaluate($args[1]);
+        $link = $this->evaluate($args[2]);
+        $foreignId = $this->evaluate($args[3]);
+
+        if (!$entityType) {
+            $this->throwError("Empty entityType.");
+        }
+
+        if (!$id) {
+            return null;
+        }
+
+        if (!$link) {
+            $this->throwError("Empty link.");
+        }
+
+        if (!$foreignId) {
+            return null;
+        }
+
+        $em = $this->entityManager;
+
+        if (!$em->hasRepository($entityType)) {
+            $this->throwError("Repository does not exist.");
+        }
+
+        $entity = $em->getEntityById($entityType, $id);
+
+        if (!$entity) {
+            return null;
+        }
+
+        $em->getRDBRepository($entityType)
+            ->getRelation($entity, $link)
+            ->unrelateById($foreignId);
+
+        return true;
+    }
+}

@@ -1,0 +1,440 @@
+<?php
+//FORAI:F2722;DEF[C2319:ConverterTest<TestCase>,F11679:setUp,F11680:testConvertApplyLeftJoins,F11681:testConvertEquals1,F11682:testConvertEquals2,F11683:testConvertOr,F11684:testConvertDateTimeOn1,F11685:testConvertSubQueryIn,F11686:testConvertLinkedWith1,F11687:testConvertCustomConverter];IMP[F1399:C1148,F1329:C1086,F1325:C1081,F1322:C1080,F1324:C1082,F1331:C1088,F1662:C1385,F1665:C1390,F323:C181,F328:C185,F379:C221,F377:C220,F369:C213,F316:C176];EXP[C2319,F11679,F11680,F11681,F11682,F11683,F11684,F11685,F11686,F11687];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace tests\unit\Espo\Core\Select\Where;
+
+use Espo\Core\Select\Helpers\RandomStringGenerator;
+use Espo\Core\Select\Where\Converter;
+use Espo\Core\Select\Where\DefaultDateTimeItemTransformer;
+use Espo\Core\Select\Where\Item;
+use Espo\Core\Select\Where\ItemConverter;
+use Espo\Core\Select\Where\ItemConverterFactory;
+use Espo\Core\Select\Where\ItemGeneralConverter;
+use Espo\Core\Select\Where\Scanner;
+use Espo\Core\Utils\Config;
+use Espo\Core\Utils\Metadata;
+
+use Espo\Entities\User;
+use Espo\ORM\Defs as ORMDefs;
+use Espo\ORM\Defs\EntityDefs;
+use Espo\ORM\Entity;
+use Espo\ORM\EntityManager;
+use Espo\ORM\Metadata as ormMetadata;
+use Espo\ORM\Query\Part\WhereClause;
+use Espo\ORM\Query\Select;
+use Espo\ORM\Query\SelectBuilder as QueryBuilder;
+use Espo\ORM\QueryBuilder as BaseQueryBuilder;
+use PHPUnit\Framework\TestCase;
+
+class ConverterTest extends TestCase
+{
+    protected function setUp() : void
+    {
+        $this->entityType = 'Test';
+
+        $this->user = $this->createMock(User::class);
+
+        $this->config = $this->createMock(Config::class);
+        $this->applicationConfig = $this->createMock(Config\ApplicationConfig::class);
+        $this->metadata = $this->createMock(Metadata::class);
+
+        $this->scanner = $this->createMock(Scanner::class);
+        $this->randomStringGenerator = $this->createMock(RandomStringGenerator::class);
+        $this->itemConverterFactory = $this->createMock(ItemConverterFactory::class);
+
+        $this->entityManager = $this->createMock(EntityManager::class);
+        $this->ormMetadata = $this->createMock(ormMetadata::class);
+
+        $this->baseQueryBuilder = $this->createMock(BaseQueryBuilder::class);
+
+        $this->entityManager
+            ->expects($this->any())
+            ->method('getMetadata')
+            ->willReturn($this->ormMetadata);
+
+        $this->entityManager
+            ->expects($this->any())
+            ->method('getQueryBuilder')
+            ->willReturn($this->baseQueryBuilder);
+
+        $this->ormDefs = $this->createMock(ORMDefs::class);
+
+        $this->queryBuilder = $this->createMock(QueryBuilder::class);
+
+        $this->randomStringGenerator
+            ->expects($this->any())
+            ->method('generate')
+            ->willReturn('Random');
+
+        $this->applicationConfig
+            ->expects($this->any())
+            ->method('getTimeZone')
+            ->willReturn('UTC');
+
+        $this->dateTimeItemTransformer = new DefaultDateTimeItemTransformer($this->config, $this->applicationConfig);
+
+        $this->itemConverter = new ItemGeneralConverter(
+            $this->entityType,
+            $this->user,
+            $this->dateTimeItemTransformer,
+            $this->scanner,
+            $this->itemConverterFactory,
+            $this->randomStringGenerator,
+            $this->ormDefs,
+            $this->config,
+            $this->metadata,
+            $this->applicationConfig,
+        );
+
+        $this->converter = new Converter(
+            $this->itemConverter,
+            $this->scanner
+        );
+    }
+
+    public function testConvertApplyLeftJoins()
+    {
+        $item = Item::fromRaw([
+            'type' => 'and',
+            'value' => [
+            ],
+        ]);
+
+        $this->scanner
+            ->expects($this->once())
+            ->method('apply')
+            ->with($this->queryBuilder, $item);
+
+        $this->converter->convert($this->queryBuilder, $item);
+    }
+
+    public function testConvertEquals1()
+    {
+        $item = Item::fromRaw([
+            'type' => 'and',
+            'value' => [
+                [
+                    'type' => 'equals',
+                    'attribute' => 'test',
+                    'value' => 'test-value',
+                ],
+            ],
+        ]);
+
+        $whereClause = $this->converter->convert($this->queryBuilder, $item);
+
+        $expected = [
+            'test=' => 'test-value',
+        ];
+
+        $this->assertEquals($expected, $whereClause->getRaw());
+    }
+
+    public function testConvertEquals2()
+    {
+        $item = Item::fromRaw([
+            'type' => 'and',
+            'value' => [
+                [
+                    'type' => 'equals',
+                    'attribute' => 'test1',
+                    'value' => 'value1',
+                ],
+                [
+                    'type' => 'equals',
+                    'attribute' => 'test2',
+                    'value' => 'value2',
+                ],
+            ],
+        ]);
+
+        $whereClause = $this->converter->convert($this->queryBuilder, $item);
+
+        $expected = [
+            ['test1=' => 'value1'],
+            ['test2=' => 'value2'],
+        ];
+
+        $this->assertEquals($expected, $whereClause->getRaw());
+    }
+
+    public function testConvertOr()
+    {
+        $item = Item::fromRaw([
+            'type' => 'and',
+            'value' => [
+                [
+                    'type' => 'or',
+                    'value' => [
+                        [
+                            'type' => 'equals',
+                            'attribute' => 'test1',
+                            'value' => 'value1',
+                        ],
+                        [
+                            'type' => 'notEquals',
+                            'attribute' => 'test2',
+                            'value' => 'value2',
+                        ],
+                    ],
+                ],
+
+            ],
+        ]);
+
+        $whereClause = $this->converter->convert($this->queryBuilder, $item);
+
+        $expected = [
+            'OR' => [
+                ['test1=' => 'value1'],
+                ['test2!=' => 'value2'],
+            ],
+        ];
+
+        $this->assertEquals($expected, $whereClause->getRaw());
+    }
+
+    public function testConvertDateTimeOn1()
+    {
+        $item = Item::fromRaw([
+            'type' => 'and',
+            'value' => [
+                [
+                    'type' => 'on',
+                    'attribute' => 'test',
+                    'value' => '2020-12-20',
+                    'dateTime' => true,
+                    'timeZone' => 'Europe/Kiev',
+                ],
+            ],
+        ]);
+
+        $whereClause = $this->converter->convert($this->queryBuilder, $item);
+
+        $expected = [
+            'AND' => [
+                'test>=' => '2020-12-19 22:00:00',
+                'test<=' => '2020-12-20 21:59:59',
+            ],
+        ];
+
+        $this->assertEquals($expected, $whereClause->getRaw());
+    }
+
+    public function testConvertSubQueryIn()
+    {
+        $item = Item::fromRaw([
+            'type' => 'and',
+            'value' => [
+                [
+                    'type' => 'subQueryIn',
+                    'value' => [
+                        [
+                            'type' => 'equals',
+                            'attribute' => 'test1',
+                            'value' => 'value1',
+                        ],
+                    ],
+                ],
+
+            ],
+        ]);
+
+        $sqItem = Item::fromRaw([
+            'type' => 'and',
+            'value' => [
+                [
+                    'type' => 'equals',
+                    'attribute' => 'test1',
+                    'value' => 'value1',
+                ],
+            ],
+        ]);
+
+        $this->scanner
+            ->method('apply')
+            ->withConsecutive(
+                [$this->isInstanceOf(QueryBuilder::class), $sqItem],
+                [$this->queryBuilder, $item]
+            );
+
+        $whereClause = $this->converter->convert($this->queryBuilder, $item);
+
+        $expected = [
+            'id=s' => Select::fromRaw([
+                'select' => ['id'],
+                'from' => $this->entityType,
+                'whereClause' => [
+                    'AND' => [
+                        ['test1=' => 'value1'],
+                    ],
+                ],
+                'leftJoins' => [],
+                'joins' => [],
+            ]),
+        ];
+
+        $this->assertEquals($expected, $whereClause->getRaw());
+    }
+
+    public function testConvertLinkedWith1()
+    {
+        $link = 'test';
+
+        $value = ['value-id'];
+
+        $item = Item::fromRaw([
+            'type' => 'and',
+            'value' => [
+                [
+                    'type' => 'linkedWith',
+                    'attribute' => $link,
+                    'value' => $value,
+                ],
+            ],
+        ]);
+
+        $this->ormDefs
+            ->expects($this->any())
+            ->method('getEntity')
+            ->with($this->entityType)
+            ->willReturn(
+                EntityDefs::fromRaw(
+                    [
+                        'relations' => [
+                            $link => [
+                                'type' => Entity::MANY_MANY,
+                                'entity' => 'Foreign',
+                                'midKeys' => ['localId', 'foreignId'],
+                                'relationName' => 'entityEntity'
+                            ],
+                        ],
+                    ],
+                    $this->entityType
+                )
+            );
+
+        $alias = $link . 'LinkedWithFilterRandom';
+
+        $this->queryBuilder
+            ->expects($this->never())
+            ->method('distinct');
+
+        $this->queryBuilder
+            ->method('leftJoin')
+            ->withConsecutive(
+                [
+                    $link,
+                    $alias,
+                ]
+            );
+
+        $expected = [
+            'id=s' => Select::fromRaw([
+                'select' => ['id'],
+                'from' => 'Test',
+                'leftJoins' => [
+                    [
+                        'test',
+                        $alias,
+                        [$alias . '.localId=:' => 'id'],
+                        [
+                            'noLeftAlias' => true,
+                            'onlyMiddle' => true,
+                        ],
+                    ],
+                ],
+                'whereClause' => [
+                    $alias . '.foreignId' => $value,
+                ],
+            ]),
+        ];
+
+        $whereClause = $this->converter->convert($this->queryBuilder, $item);
+
+        $this->assertEquals($expected, $whereClause->getRaw());
+    }
+
+    public function testConvertCustomConverter()
+    {
+        $type = 'testType';
+        $attribute = 'testAttribute';
+
+        $item = Item::fromRaw([
+            'type' => 'and',
+            'value' => [
+                [
+                    'type' => $type,
+                    'attribute' => $attribute,
+                    'value' => 'test-value',
+                ],
+            ],
+        ]);
+
+        $subItem = Item::fromRaw([
+            'type' => $type,
+            'attribute' => $attribute,
+            'value' => 'test-value',
+        ]);
+
+        $converter = $this->createMock(ItemConverter::class);
+
+        $converter
+            ->expects($this->once())
+            ->method('convert')
+            ->with($this->queryBuilder, $subItem)
+            ->willReturn(
+                WhereClause::fromRaw([
+                    'testAnother=' => 'test-value',
+                ])
+            );
+
+        $this->itemConverterFactory
+            ->expects($this->once())
+            ->method('has')
+            ->with($this->entityType, $attribute, $type)
+            ->willReturn(true);
+
+        $this->itemConverterFactory
+            ->expects($this->once())
+            ->method('create')
+            ->with($this->entityType, $attribute, $type, $this->user)
+            ->willReturn($converter);
+
+        $whereClause = $this->converter->convert($this->queryBuilder, $item);
+
+        $expected = [
+            'testAnother=' => 'test-value',
+        ];
+
+        $this->assertEquals($expected, $whereClause->getRaw());
+    }
+}

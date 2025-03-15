@@ -1,0 +1,58 @@
+<?php
+//FORAI:F2386;DEF[C1998:CampaignLogRecord<Entity>,F9980:getParent];IMP[F1851:C1553,F1909:C1608];EXP[C1998,F9980];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Modules\Crm\Entities;
+
+use Espo\Core\Field\LinkParent;
+use Espo\Core\Name\Field;
+use Espo\Core\ORM\Entity;
+
+class CampaignLogRecord extends Entity
+{
+    public const ENTITY_TYPE = 'CampaignLogRecord';
+
+    public const ACTION_LEAD_CREATED = 'Lead Created';
+    public const ACTION_SENT = 'Sent';
+    public const ACTION_BOUNCED = 'Bounced';
+    public const ACTION_OPTED_IN = 'Opted In';
+    public const ACTION_OPTED_OUT = 'Opted Out';
+    public const ACTION_OPENED = 'Opened';
+    public const ACTION_CLICKED = 'Clicked';
+
+    public const BOUNCED_TYPE_HARD = 'Hard';
+    public const BOUNCED_TYPE_SOFT = 'Soft';
+
+    public function getParent(): ?LinkParent
+    {
+        /** @var ?LinkParent */
+        return $this->getValueObject(Field::PARENT);
+    }
+}

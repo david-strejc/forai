@@ -1,0 +1,122 @@
+<?php
+//FORAI:F773;DEF[C579:NumberType,F3612:onRead,F3613:afterSave,F3614:afterRemove];IMP[F272:C133];EXP[C579,F3612,F3613,F3614];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Tools\FieldManager\Hooks;
+
+use Espo\Core\Di;
+use Espo\Entities\NextNumber;
+
+class NumberType implements Di\EntityManagerAware
+{
+    use Di\EntityManagerSetter;
+
+    /**
+     * @param array<string, mixed> $defs
+     * @param array<string, mixed> $options
+     */
+    public function onRead(string $scope, string $name, &$defs, $options): void
+    {
+        $number = $this->entityManager
+            ->getRDBRepository(NextNumber::ENTITY_TYPE)
+            ->where([
+                'entityType' => $scope,
+                'fieldName' => $name,
+            ])
+            ->findOne();
+
+        $value = null;
+
+        if (!$number) {
+            $value = 1;
+        } else {
+            if (!$number->get('value')) {
+                $value = 1;
+            }
+        }
+
+        if (!$value && $number) {
+            $value = $number->get('value');
+        }
+
+        $defs['nextNumber'] = $value;
+    }
+
+    /**
+     * @param array<string, mixed> $defs
+     * @param array<string, mixed> $options
+     */
+    public function afterSave(string $scope, string $name, $defs, $options): void
+    {
+        if (!isset($defs['nextNumber'])) {
+            return;
+        }
+
+        $number = $this->entityManager
+            ->getRDBRepository(NextNumber::ENTITY_TYPE)
+            ->where([
+                'entityType' => $scope,
+                'fieldName' => $name
+            ])
+            ->findOne();
+
+        if (!$number) {
+            $number = $this->entityManager->getNewEntity(NextNumber::ENTITY_TYPE);
+
+            $number->set('entityType', $scope);
+            $number->set('fieldName', $name);
+        }
+
+        $number->set('value', $defs['nextNumber']);
+
+        $this->entityManager->saveEntity($number);
+    }
+
+    /**
+     * @param array<string, mixed> $defs
+     * @param array<string, mixed> $options
+     */
+    public function afterRemove(string $scope, string $name, $defs, $options): void
+    {
+        $number = $this->entityManager
+            ->getRDBRepository(NextNumber::ENTITY_TYPE)
+            ->where([
+                'entityType' => $scope,
+                'fieldName' => $name
+            ])
+            ->findOne();
+
+        if (!$number) {
+            return;
+        }
+
+        $this->entityManager->removeEntity($number);
+    }
+}

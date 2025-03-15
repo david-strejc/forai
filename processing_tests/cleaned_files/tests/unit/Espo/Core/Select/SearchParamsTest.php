@@ -1,0 +1,409 @@
+<?php
+//FORAI:F2720;DEF[C2317:SearchParamsTest,F11653:setUp,F11654:testFromRaw1,F11655:testFromRawEmpty,F11656:testQ,F11657:testOrder,F11658:testMaxTextAttributeLength,F11659:testAdjust,F11660:testBadSelect1,F11661:testBadSelect2,F11662:testBadOffset,F11663:testBadBoolFilterList1,F11664:testBadBoolFilterList2,F11665:testBadTextFilter,F11666:testBadPrimaryFilter,F11667:testBadWhere,F11668:testBadOrder1,F11669:testBadOrder2,F11670:testMerge1,F11671:testCloning,F11672:testWithWhereAdded1,F11673:testWithWhereAdded2,F11674:testWithBoolFilterAdded];IMP[];EXP[C2317,F11653,F11654,F11655,F11656,F11657,F11658,F11659,F11660,F11661,F11662,F11663,F11664,F11665,F11666,F11667,F11668,F11669,F11670,F11671,F11672,F11673,F11674];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace tests\unit\Espo\Core\Select;
+
+use Espo\Core\{
+    Select\SearchParams,
+    Select\Where\Item as WhereItem,
+};
+
+use InvalidArgumentException;
+
+class SearchParamsTest extends \PHPUnit\Framework\TestCase
+{
+    protected function setUp(): void
+    {
+    }
+
+    public function testFromRaw1()
+    {
+        $raw = [
+            'select' => ['id', 'name'],
+            'offset' => 0,
+            'maxSize' => 10,
+            'order' => 'desc',
+            'orderBy' => 'testOrderBy',
+            'boolFilterList' => ['test1', 'test2'],
+            'textFilter' => 'test',
+            'primaryFilter' => 'testPrimary',
+            'where' => [
+                [
+                    'type' => 'equals',
+                    'attribute' => 'test',
+                    'value' => 'Test',
+                ],
+            ],
+        ];
+
+        $params = SearchParams::fromRaw($raw);
+
+        $this->assertEquals(['id', 'name'], $params->getSelect());
+        $this->assertEquals(0, $params->getOffset());
+        $this->assertEquals(10, $params->getMaxSize());
+        $this->assertEquals('DESC', $params->getOrder());
+        $this->assertEquals('testOrderBy', $params->getOrderBy());
+        $this->assertEquals(['test1', 'test2'], $params->getBoolFilterList());
+        $this->assertEquals('test', $params->getTextFilter());
+        $this->assertEquals('testPrimary', $params->getPrimaryFilter());
+        $this->assertEquals($raw['where'], $params->getWhere()->getRaw()['value']);
+    }
+
+    public function testFromRawEmpty()
+    {
+        $params = SearchParams::fromRaw([]);
+
+        $this->assertEquals(null, $params->getSelect());
+        $this->assertEquals(null, $params->getOffset());
+        $this->assertEquals(null, $params->getMaxSize());
+        $this->assertEquals(null, $params->getOrder());
+        $this->assertEquals(null, $params->getOrderBy());
+        $this->assertEquals(null, $params->getTextFilter());
+        $this->assertEquals(null, $params->getPrimaryFilter());
+        $this->assertEquals(null, $params->getWhere());
+    }
+
+    public function testQ()
+    {
+        $params = SearchParams::fromRaw([
+            'q' => 'test',
+        ]);
+
+        $this->assertEquals('test', $params->getTextFilter());
+    }
+
+    public function testOrder()
+    {
+        $raw = [
+
+            'order' => 'asc',
+        ];
+
+        $params = SearchParams::fromRaw($raw);
+
+        $this->assertEquals('ASC', $params->getOrder());
+    }
+
+    public function testMaxTextAttributeLength()
+    {
+        $raw = [
+            'maxTextAttributeLength' => 1000,
+        ];
+
+        $params = SearchParams::fromRaw($raw);
+
+        $this->assertEquals(1000, $params->getMaxTextAttributeLength());
+    }
+
+    public function testAdjust()
+    {
+        $raw = [
+            'where' => [
+                [
+                    'type' => 'primary',
+                    'value' => 'testPrimary',
+                ],
+                [
+                    'type' => 'textFilter',
+                    'value' => 'testText',
+                ],
+                [
+                    'type' => 'bool',
+                    'value' => ['test'],
+                ],
+            ],
+        ];
+
+        $params = SearchParams::fromRaw($raw);
+
+        $this->assertEquals('testPrimary', $params->getPrimaryFilter());
+        $this->assertEquals('testText', $params->getTextFilter());
+        $this->assertEquals(['test'], $params->getBoolFilterList());
+    }
+
+    public function testBadSelect1()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = SearchParams::fromRaw([
+            'select' => 'id,name',
+        ]);
+    }
+
+    public function testBadSelect2()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = SearchParams::fromRaw([
+            'select' => [1],
+        ]);
+    }
+
+    public function testBadOffset()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = SearchParams::fromRaw([
+            'offset' => 'hello',
+        ]);
+    }
+
+    public function testBadBoolFilterList1()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = SearchParams::fromRaw([
+            'boolFilterList' => 'test',
+        ]);
+    }
+
+    public function testBadBoolFilterList2()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = SearchParams::fromRaw([
+            'boolFilterList' => [1],
+        ]);
+    }
+
+    public function testBadTextFilter()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = SearchParams::fromRaw([
+            'textFilter' => 1,
+        ]);
+    }
+
+    public function testBadPrimaryFilter()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = SearchParams::fromRaw([
+            'primaryFilter' => 1,
+        ]);
+    }
+
+    public function testBadWhere()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = SearchParams::fromRaw([
+            'where' => 1,
+        ]);
+    }
+
+    public function testBadOrder1()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = SearchParams::fromRaw([
+            'order' => true,
+        ]);
+    }
+
+    public function testBadOrder2()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $params = SearchParams::fromRaw([
+            'order' => 'd',
+        ]);
+    }
+
+    public function testMerge1()
+    {
+        $params1 = SearchParams::fromRaw([
+            'boolFilterList' => ['f1', 'f2'],
+            'textFilter' => 't1',
+            'where' => [
+                [
+                    'type' => 'isTrue',
+                    'attribute' => 't',
+                ]
+            ],
+        ]);
+
+        $params2 = SearchParams::fromRaw([
+            'boolFilterList' => ['f2', 'f3'],
+            'textFilter' => 't2',
+            'where' => [
+                [
+                    'type' => 'isTrue',
+                    'attribute' => 't2',
+                ]
+            ],
+        ]);
+
+        $params = SearchParams::merge($params1, $params2);
+
+        $actual = $params->getRaw();
+
+        $expected = [
+            'boolFilterList' => ['f2', 'f3', 'f1'],
+            'textFilter' => 't1',
+            'where' => [
+                [
+                    'type' => 'isTrue',
+                    'attribute' => 't2',
+                ],
+                [
+                    'type' => 'isTrue',
+                    'attribute' => 't',
+                ],
+            ],
+            'select' => null,
+            'orderBy' => null,
+            'order' => null,
+            'offset' => null,
+            'maxSize' => null,
+            'primaryFilter' => null,
+            'maxTextAttributeLength' => null,
+        ];
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function testCloning(): void
+    {
+        $rawWhere = [
+            'type' => 'isTrue',
+            'attribute' => 't',
+        ];
+
+        $params = SearchParams
+            ::create()
+            ->withBoolFilterList(['a'])
+            ->withMaxSize(10)
+            ->withOffset(0)
+            ->withMaxTextAttributeLength(100)
+            ->withOrder('DESC')
+            ->withOrderBy('name')
+            ->withPrimaryFilter('test')
+            ->withSelect(['name'])
+            ->withTextFilter('test*')
+            ->withWhere(WhereItem::fromRaw($rawWhere));
+
+        $this->assertEquals(['a'], $params->getBoolFilterList());
+        $this->assertEquals(10, $params->getMaxSize());
+        $this->assertEquals(0, $params->getOffset());
+        $this->assertEquals(100, $params->getMaxTextAttributeLength());
+        $this->assertEquals('DESC', $params->getOrder());
+        $this->assertEquals('name', $params->getOrderBy());
+        $this->assertEquals('test', $params->getPrimaryFilter());
+        $this->assertEquals(['name'], $params->getSelect());
+        $this->assertEquals('test*', $params->getTextFilter());
+        $this->assertEquals('isTrue', $params->getWhere()->getRaw()['value'][0]['type']);
+    }
+
+    public function testWithWhereAdded1(): void
+    {
+        $params = SearchParams
+            ::create()
+            ->withWhere(
+                WhereItem::fromRaw([
+                    'type' => 'isTrue',
+                    'attribute' => 'a1',
+                ])
+            )
+            ->withWhereAdded(
+                 WhereItem::fromRaw([
+                    'type' => 'isTrue',
+                    'attribute' => 'a2',
+                ])
+            );
+
+        $where = $params->getWhere();
+
+        $this->assertEquals(WhereItem\Type::AND, $where->getType());
+
+        $this->assertEquals(
+            [
+                'type' => WhereItem\Type::AND,
+                'value' => [
+                    [
+                        'type' => 'isTrue',
+                        'attribute' => 'a1',
+                        'value' => null,
+                    ],
+                    [
+                        'type' => 'isTrue',
+                        'attribute' => 'a2',
+                        'value' => null,
+                    ],
+                ],
+            ],
+            $where->getRaw()
+        );
+    }
+
+    public function testWithWhereAdded2(): void
+    {
+        $params = SearchParams
+            ::create()
+            ->withWhereAdded(
+                 WhereItem::fromRaw([
+                    'type' => 'isTrue',
+                    'attribute' => 'a2',
+                ])
+            );
+
+        $where = $params->getWhere();
+
+        $this->assertEquals(WhereItem\Type::AND, $where->getType());
+
+        $this->assertEquals(
+            [
+                'type' => WhereItem\Type::AND,
+                'value' => [
+                    [
+                        'type' => 'isTrue',
+                        'attribute' => 'a2',
+                        'value' => null,
+                    ],
+                ],
+            ],
+            $where->getRaw()
+        );
+    }
+
+    public function testWithBoolFilterAdded(): void
+    {
+        $params = SearchParams
+            ::create()
+            ->withBoolFilterList(['test1']);
+
+        $this->assertEquals(
+            ['test1', 'test2'],
+            $params->withBoolFilterAdded('test2')->getBoolFilterList()
+        );
+    }
+}

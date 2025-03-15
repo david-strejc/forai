@@ -1,0 +1,48 @@
+<?php
+//FORAI:F1426;DEF[C1177:ParserFactory,F6062:__construct,F6063:create];IMP[F846:C649,F1471:C1215];EXP[C1177,F6063];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Core\Mail;
+
+use Espo\Core\InjectableFactory;
+use Espo\Core\Mail\Parsers\MailMimeParser;
+
+class ParserFactory
+{
+    protected const DEFAULT_PARSER_CLASS_NAME = MailMimeParser::class;
+
+    public function __construct(private InjectableFactory $injectableFactory)
+    {}
+
+    public function create(): Parser
+    {
+        return $this->injectableFactory->create(self::DEFAULT_PARSER_CLASS_NAME);
+    }
+}

@@ -1,0 +1,71 @@
+<?php
+//FORAI:F763;DEF[C570:Time,F3565:__construct,F3566:getHour,F3567:getMinute];IMP[];EXP[C570,F3566,F3567];LANG[php]//
+
+/************************************************************************
+ * This file is part of EspoCRM.
+ *
+ * EspoCRM – Open Source CRM application.
+ * Copyright (C) 2014-2025 Yurii Kuznietsov, Taras Machyshyn, Oleksii Avramenko
+ * Website: https://www.espocrm.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License version 3.
+ *
+ * In accordance with Section 7(b) of the GNU Affero General Public License version 3,
+ * these Appropriate Legal Notices must retain the display of the "EspoCRM" word.
+ ************************************************************************/
+
+namespace Espo\Tools\WorkingTime\Calendar;
+
+class Time
+{
+    /**
+     * @var int<0,23>
+     */
+    private int $hour;
+
+    /**
+     * @var int<0,59>
+     */
+    private int $minute;
+
+    /**
+     * @param int<0,23> $hour
+     * @param int<0,59> $minute
+     */
+    public function __construct(int $hour, int $minute)
+    {
+        $this->hour = $hour;
+        $this->minute = $minute;
+    }
+
+    /**
+     * @return int<0,23>
+     */
+    public function getHour(): int
+    {
+        return $this->hour;
+    }
+
+    /**
+     * @return int<0,59>
+     */
+    public function getMinute(): int
+    {
+        return $this->minute;
+    }
+}
